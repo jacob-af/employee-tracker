@@ -17,7 +17,9 @@ connection.query = util.promisify(connection.query);
 
 const addDepartment = () => {
     //code to add new department
-
+    inquirer.prompt([{
+        type: "input",
+    }])
 }
 
 const addEmployee = async () => {
@@ -43,7 +45,7 @@ const addEmployee = async () => {
                     },
                     {
                         name: "lastName",
-                        message: "Enter new employee's first name",
+                        message: "Enter new employee's last name",
                         type: "input"
                     },
                     {
@@ -103,8 +105,46 @@ const addRole = (data) => {
     //code to add new role
 }
 
-const viewDepartment = () => {
+const viewDepartment = async () => {
     //return view department table
+    connection.query("Select id, department_name from departments;",
+        async (err, rows) => {
+            if (err) throw err;
+            let departments = rows.map((row) => {
+                return row.department_name
+            })
+            departments = ["All", ...departments]
+            console.log(departments)
+            let answers = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "chooseDepartment",
+                    message: "Which department would you like to view?: ",
+                    choices: departments
+                },
+            ])
+            if (answers.chooseDepartment === "All") {
+                connection.query(
+                    "SELECT employees.id, employees.first_name AS 'First Name', employees.last_name AS 'Last Name', role.title as Title, role.salary AS Salary, departments.department_name AS Department, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employees JOIN role ON employees.role_id = role.id JOIN departments ON role.department_id = departments.id LEFT JOIN employees AS manager ON employees.manager_id = manager.id ORDER BY Department", (err, rows) => {
+                        if (err) throw err;
+                        console.log("All Employees")
+                        console.table(rows)
+                        runPrompt();
+                    })
+            } else {
+                connection.query(
+                    "SELECT employees.id, employees.first_name AS 'First Name', employees.last_name AS 'Last Name', role.title as Title, role.salary AS Salary, departments.department_name AS department, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employees JOIN role ON employees.role_id = role.id JOIN departments ON role.department_id = departments.id LEFT JOIN employees AS manager ON employees.manager_id = manager.id WHERE ?",
+                    { "departments.department_name": answers.chooseDepartment },
+                    (err, rows) => {
+                        if (err) throw err;
+                        console.log("All Employees")
+                        console.table(rows)
+                        runPrompt();
+                    })
+            }
+
+        }
+    )
 }
 
 const viewRoles = () => {
@@ -141,6 +181,19 @@ const viewDepartmentBudgetUsage = (data) => {
 
 }
 
+const getList = async (field, table) => {
+    let list = [];
+    connection.query(`Select id, ${field} from ${table}`, async (err, rows) => {
+        if (err)
+            throw err;
+        list = rows.map((row) => {
+            return { name: row.title, value: row.id };
+        });
+        return list;
+    })
+
+}
+
 const farewell = () => {
     console.log("farewell")
 }
@@ -154,6 +207,7 @@ const runPrompt = async () => {
             break;
         case 'View All Employees by department':
             viewDepartment();
+            break;
         case 'View all employees by manager':
             viewManager();
         case 'Add Employee':
