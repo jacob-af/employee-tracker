@@ -1,6 +1,5 @@
-const mysql = require('mysql');
+const mysql = require('mysql-await');
 const inquirer = require('inquirer')
-const util = require('util');
 const cTable = require('console.table')
 
 const questions = require("./assets/questions.js");
@@ -12,8 +11,6 @@ const connection = mysql.createConnection({
     password: 'b00tcamp',
     database: 'employee_db',
 });
-
-connection.query = util.promisify(connection.query);
 
 const addDepartment = () => {
     //code to add new department
@@ -101,8 +98,50 @@ const addEmployee = async () => {
 
 }
 
-const addRole = (data) => {
+const addRole = async () => {
     //code to add new role
+    const titles = await getList('title', 'role')
+    const departments = await getList('department_name', 'departments')
+    console.log(titles, departments)
+    let answers = await inquirer.prompt([
+        {
+            type: "input",
+            name: "title",
+            message: "What is the name of the new role?: ",
+            validate: function (newRole) {
+                if (titles.findIndex(title => title.title === newRole) !== -1 || newRole === '') {
+                    console.log('that role already exists')
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        },
+        {
+            type: "number",
+            name: "salary",
+            message: "How much will this role be paid? "
+        },
+        {
+            type: 'list',
+            name: 'department',
+            message: "Which department will they be working in?",
+            choices: departments
+        },
+    ])
+    connection.query("insert into role set ?", {
+        title: answers.title,
+        salary: answers.salary,
+        department_id: answers.department
+    },
+        (err) => {
+            if (err) throw err;
+            console.log('New Role Added');
+            runPrompt()
+        }
+    )
+    console.log(answers)
+
 }
 
 const viewDepartment = async () => {
@@ -149,6 +188,20 @@ const viewDepartment = async () => {
 
 const viewRoles = () => {
     //return view role table
+    connection.query(
+        `SELECT 
+            role.id, 
+            role.title, 
+            role.salary, 
+            departments.department_name 
+        FROM role 
+        JOIN departments ON role.department_id = departments.id`,
+        (err, rows) => {
+            if (err) throw err;
+            console.log("Current Roles")
+            console.table(rows)
+            runPrompt();
+        })
 }
 
 const viewEmployees = () => {
@@ -249,16 +302,11 @@ const viewDepartmentBudgetUsage = (data) => {
 }
 
 const getList = async (field, table) => {
-    let list = [];
-    connection.query(`Select id, ${field} from ${table}`, async (err, rows) => {
-        if (err)
-            throw err;
-        list = rows.map((row) => {
-            return { name: row.title, value: row.id };
-        });
-        return list;
+    let list = await connection.awaitQuery(`Select id, ${field} from ${table}`)
+    list = list.map(row => {
+        return { name: row[`${field}`], value: row.id }
     })
-
+    return list
 }
 
 const farewell = () => {
@@ -278,11 +326,15 @@ const runPrompt = async () => {
         case 'View all employees by manager':
             viewEmployeesByManager();
             break;
+        case "View Roles":
+            viewRoles();
+            break;
         case 'Add Employee':
             addEmployee();
             break;
-        case 'Remove Employee':
-            deleteEmployee();
+        case 'Add Role':
+            addRole();
+            break;
         case 'Update Employee Role':
             return;
         case 'Update Employee Manager':
