@@ -3,7 +3,6 @@ const inquirer = require('inquirer')
 const cTable = require('console.table')
 
 const questions = require("./assets/questions.js");
-const PasswordPrompt = require('inquirer/lib/prompts/password');
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -18,8 +17,47 @@ const addDepartment = (data) => {
     //code to add new department
 }
 
-const addEmployee = data => {
+const addEmployee = async () => {
+    let managers = await connection.query("Select * from employees", (err, rows) => {
+        
+    })
+    console.log(managers)
     //code to add new employee
+    let answers = await inquirer.prompt([
+        {
+            type: "input",
+            name: "firstName",
+            message: "Enter new employee's first name",
+            
+        },
+        {
+            name: "lastName",
+            message: "Enter new employee's first name",
+            type: "input"
+        },
+        {
+            name: "role",
+            message: "select employee role:",
+            type: "list",
+            choices: [1,2,3,4,5,6]
+        },
+
+        {
+            name: "manager",
+            message: "select employee role:",
+            type: "list",
+            choices: [1,2,3,4,5]
+
+        },
+    ])
+    connection.query("insert into employees set ?", { first_name: answers.firstName,
+         last_name: answers.lastName, role_id: answers.role, manager_id: answers.manager },
+         (err) => {
+            if (err) throw err;
+            console.log('employee added');
+            // re-prompt the user for if they want to bid or post
+          }
+    )
 }
 
 const addRole = (data) => {
@@ -36,12 +74,12 @@ const viewRoles = () => {
 
 const viewEmployees = () => {
     connection.query(
-        "select employees.id, employees.first_name, employees.last_name, role.title, role.salary, departments.department_name, concat(manager.first_name, ' ', manager.last_name) as manager from employees join role on employees.role_id = role.id join departments on role.department_id = departments.id left join employees as manager on employees.manager_id = manager.id", (err, rows) => {
+        "SELECT employees.id, employees.first_name AS 'First Name', employees.last_name AS 'Last Name', role.title as Title, role.salary AS Salary, departments.department_name AS Department, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employees JOIN role ON employees.role_id = role.id JOIN departments ON role.department_id = departments.id LEFT JOIN employees AS manager ON employees.manager_id = manager.id", (err, rows) => {
         if (err) throw err;
+        console.log("All Employees")
         console.table(rows)
-        return
+        return runPrompt();
     })
-
 }
 
 const updateManager = (data) => {
@@ -64,13 +102,16 @@ const viewDepartmentBudgetUsage = (data) => {
 
 }
 
+const farewell = () => {
+    console.log("farewell")
+}
+
 const runPrompt = async () => {
     let answers = await inquirer.prompt(questions)
     //switch-case for answers
     switch (answers.action) {
         case 'View All Employees':
-            viewEmployees();
-            return runPrompt();
+            return viewEmployees();
         case 'View All Employees by department':
             viewDepartment();
         case 'View all employees by manager':
@@ -88,8 +129,7 @@ const runPrompt = async () => {
         case 'Remove Department':
             return;
         case 'Exit':
-            console.log('Farewell!')
-            break;
+            return farewell()
         default:
             console.log("how did you do that?")
     }
