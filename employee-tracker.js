@@ -35,10 +35,11 @@ const viewRoles = () => {
 }
 
 const viewEmployees = () => {
-    connection.query('select * from employees', (err, rows) => {
+    connection.query(
+        "select employees.id, employees.first_name, employees.last_name, role.title, role.salary, departments.department_name, concat(manager.first_name, ' ', manager.last_name) as manager from employees join role on employees.role_id = role.id join departments on role.department_id = departments.id left join employees as manager on employees.manager_id = manager.id", (err, rows) => {
         if (err) throw err;
         console.table(rows)
-        return runPrompt();
+        return
     })
 
 }
@@ -68,7 +69,8 @@ const runPrompt = async () => {
     //switch-case for answers
     switch (answers.action) {
         case 'View All Employees':
-            return viewEmployees();
+            viewEmployees();
+            return runPrompt();
         case 'View All Employees by department':
             viewDepartment();
         case 'View all employees by manager':

@@ -1,4 +1,4 @@
-INSERT INTO departments (deparment_name) Values ("Operations"), ("Marketing"), ("Accounting"), ("HR"), ("Development");
+INSERT INTO departments (department_name) Values ("Operations"), ("Marketing"), ("Accounting"), ("HR"), ("Development");
 
 insert into role (title, salary, department_id) Values 
 ("Director of Operations", 150000,1),
