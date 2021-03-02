@@ -214,7 +214,66 @@ const addEmployee = async () => {
 
 }
 
+const editEmployee = async () => {
+
+}
+
 const deleteEmployee = () => { }
+
+const viewDepartments = () => {
+    connection.query(
+        `SELECT 
+            *
+        FROM departments`,
+        (err, rows) => {
+            if (err) throw err;
+            console.log("Current Departments")
+            console.table(rows)
+            runPrompt();
+        })
+}
+
+const viewDepartmentBudgetUsage = (data) => {
+
+}
+
+const addDepartment = async () => {
+    //code to add new department
+    const departments = await getList('department_name', 'departments')
+    let answers = await inquirer.prompt([
+        {
+            type: "input",
+            name: "title",
+            message: "What is the name of the new depatment?: ",
+            validate: function () {
+                if (titles.findIndex(title => title.title === newRole) !== -1 || newRole === '') {
+                    console.log('that role already exists')
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        },
+        {
+            type: "number",
+            name: "salary",
+            message: "How much will this role be paid? "
+        },
+        {
+            type: 'list',
+            name: 'department',
+            message: "Which department will they be working in?",
+            choices: departments
+        },
+    ])
+}
+
+
+const deleteDepartment = (data) => {
+    //drop a row
+}
+
+
 
 const viewRoles = () => {
     //return view role table
@@ -239,11 +298,10 @@ const addRole = async () => {
     //code to add new role
     const titles = await getList('title', 'role')
     const departments = await getList('department_name', 'departments')
-    console.log(titles, departments)
     let answers = await inquirer.prompt([
         {
             type: "input",
-            name: "title",
+            name: "newRole",
             message: "What is the name of the new role?: ",
             validate: function (newRole) {
                 if (titles.findIndex(title => title.title === newRole) !== -1 || newRole === '') {
@@ -267,7 +325,7 @@ const addRole = async () => {
         },
     ])
     connection.query("insert into role set ?", {
-        title: answers.title,
+        title: answers.newRole,
         salary: answers.salary,
         department_id: answers.department
     },
@@ -281,32 +339,7 @@ const addRole = async () => {
 
 }
 
-const addDepartment = () => {
-    //code to add new department
-    inquirer.prompt([{
-        type: "input",
-    }])
-}
-
-
-
-const updateManager = (data) => {
-
-}
-
-
-
-const deleteDepartment = (data) => {
-    //drop a row
-}
-
 const deleteRole = (data) => { }
-
-const deleteEmployee = (data) => { }
-
-const viewDepartmentBudgetUsage = (data) => {
-
-}
 
 const getList = async (field, table) => {
     let list = await connection.awaitQuery(`Select id, ${field} from ${table}`)
@@ -317,6 +350,7 @@ const getList = async (field, table) => {
 }
 
 const farewell = () => {
+    connection.end();
     console.log("farewell")
 }
 
@@ -354,14 +388,11 @@ const farewell = () => {
 //             connection.end();
 //             farewell()
 //             break;
-//         default:
-//             connection.end();
-//             console.log("how did you do that?")
-//             break;
+//         
 //     }
 // }
 
-const runPrompt = () => {
+const runPrompt = async () => {
     let answers = await inquirer.prompt(questions)
     switch (answers.action) {
         case 'View, add, edit, or delete Employee':
@@ -371,8 +402,11 @@ const runPrompt = () => {
             roles(answers.roles);
             break;
         case 'View, add, edit, or delete Department':
-            department(answers.departments)
+            departments(answers.departments);
+            break;
         case 'Exit':
+            farewell();
+            break;
         default:
             connection.end();
             console.log("how did you do that?")
@@ -381,7 +415,64 @@ const runPrompt = () => {
 }
 
 const employees = (choice) => {
+    switch (choice) {
+        case 'View All Employees':
+            viewEmployees();
+            break;
+        case 'View All Employees By Department':
+            viewEmployeesByDepartment();
+            break;
+        case 'View All Employees By Manager':
+            viewEmployeesByManager();
+            break;
+        case 'Add Employee':
+            addEmployee();
+            break;
+        case 'Edit Employee':
+            editEmployee();
+            break;
+        case 'Delete Employee':
+            deleteEmployee();
+        case 'Return to main menu':
+        default:
+            runPrompt()
+            break;
+    }
+}
 
+const departments = (choice) => {
+    switch (choice) {
+        case 'View Departments':
+            viewDepartments();
+            break;
+        case "View Departments' Budget":
+            viewDepartmentBudgetUsage();
+            break;
+        case 'Add Department':
+        case 'Edit Department':
+        case 'Delete Department':
+        case 'Return to main menu':
+        default:
+            runPrompt()
+            break;
+    }
+}
+
+const roles = (choice) => {
+    switch (choice) {
+        case 'View Roles':
+            viewRoles();
+            break;
+        case 'Add Role':
+            addRole();
+            break;
+        // case 'Edit Role':
+        // case 'Delete Role':
+        case 'Return to main menu':
+        default:
+            runPrompt()
+            break;
+    }
 }
 
 

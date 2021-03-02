@@ -35,7 +35,7 @@ const newQuestions = [
   },
   {
     when: answers => answers.action === 'View, add, edit, or delete Employee',
-    name: 'employee',
+    name: 'employees',
     type: 'rawlist',
     message: 'What would you like to do?',
     choices: [
@@ -49,7 +49,7 @@ const newQuestions = [
     ],
   },
   {
-    when: answers => answers.action === 'View, add, edit, or delete Role',
+    when: answers => answers.action === 'View, add, edit, or delete Department',
     name: 'departments',
     type: 'rawlist',
     message: 'What would you like to do?',
@@ -63,7 +63,7 @@ const newQuestions = [
     ],
   },
   {
-    when: answers => answers.action === 'View, add, edit, or delete Department',
+    when: answers => answers.action === 'View, add, edit, or delete Role',
     name: 'roles',
     type: 'rawlist',
     message: 'What would you like to do?',
