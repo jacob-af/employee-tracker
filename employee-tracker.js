@@ -165,8 +165,75 @@ const updateManager = (data) => {
 
 }
 
-const viewEmployeesByManager = () => {
+const viewEmployeesByManager = async () => {
     // view employee by manager
+    connection.query("Select id, CONCAT(first_name, ' ', last_name) as manager from employees where manager_id is NULL",
+        async (err, rows) => {
+            if (err) throw err;
+            let managers = rows.map((row) => {
+                return row.manager
+            })
+            managers = ["No Manager", ...managers]
+            let answers = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "chooseManager",
+                    message: "Which manager's team would you like to view?: ",
+                    choices: managers
+                },
+            ])
+            if (answers.chooseManager === "No Manager") {
+                connection.query(
+                    `SELECT * FROM
+                    (
+                    SELECT 
+                        employees.id, 
+                        employees.first_name AS 'First Name', 
+                        employees.last_name AS 'Last Name', 
+                        role.title as Title, 
+                        role.salary AS Salary, 
+                        departments.department_name AS Department, 
+                        CONCAT(manager.first_name, ' ', manager.last_name) AS Manager 
+                    FROM employees 
+                        JOIN role ON employees.role_id = role.id 
+                        JOIN departments ON role.department_id = departments.id 
+                        LEFT JOIN employees AS manager ON employees.manager_id = manager.id
+                    ) as temp
+                    WHERE Manager is Null`, (err, rows) => {
+                    if (err) throw err;
+                    console.log("Employees with no manager")
+                    console.table(rows)
+                    runPrompt();
+                })
+            } else {
+                connection.query(
+                    `SELECT * FROM
+                    (
+                    SELECT 
+                        employees.id, 
+                        employees.first_name AS 'First Name', 
+                        employees.last_name AS 'Last Name', 
+                        role.title as Title, 
+                        role.salary AS Salary, 
+                        departments.department_name AS Department, 
+                        CONCAT(manager.first_name, ' ', manager.last_name) AS Manager 
+                    FROM employees 
+                        JOIN role ON employees.role_id = role.id 
+                        JOIN departments ON role.department_id = departments.id 
+                        LEFT JOIN employees AS manager ON employees.manager_id = manager.id
+                    ) as temp
+                    WHERE ?`,
+                    { "Manager": answers.chooseManager },
+                    (err, rows) => {
+                        if (err) throw err;
+                        console.log(`Employees managed by ${answers.chooseManager}`)
+                        console.table(rows)
+                        runPrompt();
+                    })
+            }
+
+        }
+    )
 }
 
 const deleteDepartment = (data) => {
@@ -209,7 +276,8 @@ const runPrompt = async () => {
             viewDepartment();
             break;
         case 'View all employees by manager':
-            viewManager();
+            viewEmployeesByManager();
+            break;
         case 'Add Employee':
             addEmployee();
             break;
