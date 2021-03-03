@@ -3,6 +3,7 @@ const inquirer = require('inquirer')
 const cTable = require('console.table')
 
 const questions = require("./assets/questions.js");
+const { viewEmployees, viewEmployeesByDepartment } = require("./assets/employees.js")
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -11,58 +12,6 @@ const connection = mysql.createConnection({
     password: 'b00tcamp',
     database: 'employee_db',
 });
-
-const viewEmployees = () => {
-    connection.query(
-        "SELECT employees.id, employees.first_name AS 'First Name', employees.last_name AS 'Last Name', role.title as Title, role.salary AS Salary, departments.department_name AS Department, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employees JOIN role ON employees.role_id = role.id JOIN departments ON role.department_id = departments.id LEFT JOIN employees AS manager ON employees.manager_id = manager.id", (err, rows) => {
-            if (err) throw err;
-            console.log("All Employees")
-            console.table(rows)
-            runPrompt();
-        })
-}
-
-const viewEmployeesByDepartment = async () => {
-    //return view department table
-    connection.query("Select id, department_name from departments;",
-        async (err, rows) => {
-            if (err) throw err;
-            let departments = rows.map((row) => {
-                return row.department_name
-            })
-            departments = ["All", ...departments]
-            console.log(departments)
-            let answers = await inquirer.prompt([
-                {
-                    type: "list",
-                    name: "chooseDepartment",
-                    message: "Which department would you like to view?: ",
-                    choices: departments
-                },
-            ])
-            if (answers.chooseDepartment === "All") {
-                connection.query(
-                    "SELECT employees.id, employees.first_name AS 'First Name', employees.last_name AS 'Last Name', role.title as Title, role.salary AS Salary, departments.department_name AS Department, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employees JOIN role ON employees.role_id = role.id JOIN departments ON role.department_id = departments.id LEFT JOIN employees AS manager ON employees.manager_id = manager.id ORDER BY Department", (err, rows) => {
-                        if (err) throw err;
-                        console.log("All Employees")
-                        console.table(rows)
-                        runPrompt();
-                    })
-            } else {
-                connection.query(
-                    "SELECT employees.id, employees.first_name AS 'First Name', employees.last_name AS 'Last Name', role.title as Title, role.salary AS Salary, departments.department_name AS department, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employees JOIN role ON employees.role_id = role.id JOIN departments ON role.department_id = departments.id LEFT JOIN employees AS manager ON employees.manager_id = manager.id WHERE ?",
-                    { "departments.department_name": answers.chooseDepartment },
-                    (err, rows) => {
-                        if (err) throw err;
-                        console.log("All Employees")
-                        console.table(rows)
-                        runPrompt();
-                    })
-            }
-
-        }
-    )
-}
 
 const viewEmployeesByManager = async () => {
     // view employee by manager
@@ -214,11 +163,115 @@ const addEmployee = async () => {
 
 }
 
-const editEmployee = async () => {
-
+const editEmployeeRole = async () => {
+    let employeeList = await getList("CONCAT(first_name, ' ', last_name)", "employees")
+    let rolesList = await getList("title", 'role')
+    let answers = await inquirer.prompt([
+        {
+            name: "alter",
+            message: "Which Employee are you reassigning to a new role?:",
+            type: "list",
+            choices: employeeList
+        },
+        {
+            name: "role",
+            message: "What is their new role?:",
+            type: "list",
+            choices: rolesList
+        },
+    ])
+    connection.query(
+        `UPDATE employees set ? WHERE ?`,
+        [{ role_id: answers.role },
+        { id: answers.alter }],
+        (err, rows) => {
+            if (err) {
+                console.log("Role could not be updated")
+            }
+            console.log("Role updated")
+            runPrompt();
+        })
 }
 
-const deleteEmployee = () => { }
+const editEmployeeManager = async () => {
+    let employeeList = await getList("CONCAT(first_name, ' ', last_name)", "employees")
+    let managersList = await getList("CONCAT(first_name, ' ', last_name)", 'employees where manager_id is Null')
+    let answers = await inquirer.prompt([
+        {
+            name: "alter",
+            message: "Which Employee are you reassigning to a new manager?:",
+            type: "list",
+            choices: employeeList
+        },
+        {
+            name: "manager",
+            message: "Who will the new manager be?:",
+            type: "list",
+            choices: managersList
+        },
+    ])
+    connection.query(
+        `UPDATE employees set ? WHERE ?`,
+        [{ manager_id: answers.manager },
+        { id: answers.alter }],
+        (err, rows) => {
+            if (err) {
+                console.log("Manager could not be updated")
+            }
+            console.log("Manager updated")
+            runPrompt();
+        })
+}
+
+const deleteEmployee = async () => {
+    let employeeList = await getList("CONCAT(first_name, ' ', last_name)", "employees")
+    let managersList = await getList('manager_id', 'employees where manager_id is Null')
+    console.log(managersList)
+    let answers = await inquirer.prompt([
+        {
+            name: "delete",
+            message: "Which Employee are you Deleting?:",
+            type: "list",
+            choices: employeeList
+        },
+        {
+            name: "check",
+            message: 'are you sure?',
+            type: "confirm"
+        },
+        {
+            when: answers => managersList.findIndex(manager => manager.value === answers.delete) !== -1,
+            name: "dblCheck",
+            message: "deleting a manager will delete all of their subordiates\nARE YOU SURE?",
+            type: 'confirm'
+        }
+    ])
+    if (answers.check) {
+        if (answers.dblCheck) {
+            connection.query(
+                `Delete from employees where ?`,
+                { manager_id: answers.delete },
+                (err, rows) => {
+                    if (err) {
+                        console.log("You may not delete this employee")
+                    }
+                })
+        }
+        connection.query(
+            `Delete from employees where ?`,
+            { id: answers.delete },
+            (err, rows) => {
+                if (err) {
+                    console.log("You may not delete this employee")
+                }
+                console.log("Employee deleted")
+                runPrompt();
+            })
+    } else {
+        console.log('going back to main menu...')
+        runPrompt()
+    }
+}
 
 const viewDepartments = () => {
     connection.query(
@@ -243,34 +296,78 @@ const addDepartment = async () => {
     let answers = await inquirer.prompt([
         {
             type: "input",
-            name: "title",
-            message: "What is the name of the new depatment?: ",
-            validate: function () {
-                if (titles.findIndex(title => title.title === newRole) !== -1 || newRole === '') {
-                    console.log('that role already exists')
+            name: "newDepartment",
+            message: "What is the name of the new department?: ",
+            validate: function (newDepartment) {
+                if (departments.findIndex(department => department.name === newDepartment) !== -1 || newDepartment === '') {
+                    console.log('\nthat department already exists')
                     return false;
                 } else {
                     return true;
                 }
             }
         },
-        {
-            type: "number",
-            name: "salary",
-            message: "How much will this role be paid? "
-        },
-        {
-            type: 'list',
-            name: 'department',
-            message: "Which department will they be working in?",
-            choices: departments
-        },
     ])
+    connection.query("insert into departments set ?", {
+        department_name: answers.newDepartment
+    },
+        (err) => {
+            if (err) throw err;
+            console.log('New Department Added');
+            runPrompt()
+        }
+    )
 }
 
 
-const deleteDepartment = (data) => {
+const deleteDepartment = async () => {
     //drop a row
+    let departmentList = await getList("department_name", "department")
+    console.log(managersList)
+    let answers = await inquirer.prompt([
+        {
+            name: "delete",
+            message: "Which Department are you Deleting?:",
+            type: "list",
+            choices: departmentList
+        },
+        {
+            name: "check",
+            message: 'are you sure?',
+            type: "confirm"
+        },
+        {
+            when: answers => managersList.findIndex(manager => manager.value === answers.delete) !== -1,
+            name: "dblCheck",
+            message: "deleting a department will delete all of their subordiates\nARE YOU SURE?",
+            type: 'confirm'
+        }
+    ])
+    if (answers.check) {
+        if (answers.dblCheck) {
+            connection.query(
+                `Delete from employees where ?`,
+                { manager_id: answers.delete },
+                (err, rows) => {
+                    if (err) {
+                        console.log("You may not delete this employee")
+                    }
+                })
+        }
+        connection.query(
+            `Delete from employees where ?`,
+            { id: answers.delete },
+            (err, rows) => {
+                if (err) {
+                    console.log("You may not delete this employee")
+                }
+                console.log("Employee deleted")
+                runPrompt();
+            })
+    } else {
+        console.log('going back to main menu...')
+        runPrompt()
+    }
 }
 
 
@@ -304,8 +401,8 @@ const addRole = async () => {
             name: "newRole",
             message: "What is the name of the new role?: ",
             validate: function (newRole) {
-                if (titles.findIndex(title => title.title === newRole) !== -1 || newRole === '') {
-                    console.log('that role already exists')
+                if (titles.findIndex(title => title.name === newRole) !== -1 || newRole === '') {
+                    console.log('\nthat role already exists')
                     return false;
                 } else {
                     return true;
@@ -335,11 +432,11 @@ const addRole = async () => {
             runPrompt()
         }
     )
-    console.log(answers)
-
 }
 
-const deleteRole = (data) => { }
+const deleteRole = async () => {
+    const titles = await getList('title', 'role')
+}
 
 const getList = async (field, table) => {
     let list = await connection.awaitQuery(`Select id, ${field} from ${table}`)
@@ -417,22 +514,26 @@ const runPrompt = async () => {
 const employees = (choice) => {
     switch (choice) {
         case 'View All Employees':
-            viewEmployees();
+            viewEmployees(connection, employees);
             break;
         case 'View All Employees By Department':
-            viewEmployeesByDepartment();
+            viewEmployeesByDepartment(connection, employees);
             break;
         case 'View All Employees By Manager':
-            viewEmployeesByManager();
+            viewEmployeesByManager(connection, employees);
             break;
         case 'Add Employee':
-            addEmployee();
+            addEmployee(connection, employees);
             break;
-        case 'Edit Employee':
-            editEmployee();
+        case 'Edit Employee Role':
+            editEmployeeRole(connection, employees);
+            break;
+        case 'Edit Employee Manager':
+            editEmployeeManager(connection, employees);
             break;
         case 'Delete Employee':
-            deleteEmployee();
+            deleteEmployee(connection, employees);
+            break;
         case 'Return to main menu':
         default:
             runPrompt()
@@ -449,8 +550,12 @@ const departments = (choice) => {
             viewDepartmentBudgetUsage();
             break;
         case 'Add Department':
+            addDepartment();
+            break;
         case 'Edit Department':
         case 'Delete Department':
+            deleteDepartment();
+            break;
         case 'Return to main menu':
         default:
             runPrompt()

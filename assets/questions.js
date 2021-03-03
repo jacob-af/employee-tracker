@@ -43,7 +43,8 @@ const newQuestions = [
       'View All Employees By Department',
       'View All Employees By Manager',
       'Add Employee',
-      'Edit Employee',
+      'Edit Employee Role',
+      'Edit Employee Manager',
       'Delete Employee',
       'Return to main menu'
     ],
