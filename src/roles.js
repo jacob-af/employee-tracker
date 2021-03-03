@@ -133,12 +133,12 @@ const deleteRole = async (roles) => {
     },
   ]);
   if (answer2.check) {
-    connection.awaitQuery(`UPDATE employees set ? WHERE ?`, [
+    connection.awaitQuery(`UPDATE employees SET ? WHERE ?`, [
       { role_id: answer2.replace },
       { role_id: answer1.deleted },
     ]);
     console.log("Employees' roles update");
-    connection.query(`Delete from role where ?`, { id: answer1.deleted });
+    connection.awaitQuery(`Delete from role where ?`, { id: answer1.deleted });
     console.log("Role deleted");
     roles();
   } else {

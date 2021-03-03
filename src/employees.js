@@ -77,7 +77,7 @@ const viewEmployeesByManager = async (employees) => {
     console.table(rows);
     employees();
   } else {
-    let rows = await connection.queryAwait(
+    let rows = await connection.awaitQuery(
       `SELECT * FROM
         (${mainQuery}) AS temp
         WHERE ?`,
@@ -123,34 +123,22 @@ const addEmployee = async (employees) => {
     },
   ]);
   if (answers.manager !== 0) {
-    connection.query(
-      "insert into employees set ?",
-      {
-        first_name: answers.firstName,
-        last_name: answers.lastName,
-        role_id: answers.role,
-        manager_id: answers.manager,
-      },
-      (err) => {
-        if (err) throw err;
-        console.log("employee added");
-        employees();
-      }
-    );
+    connection.awaitQuery("insert into employees set ?", {
+      first_name: answers.firstName,
+      last_name: answers.lastName,
+      role_id: answers.role,
+      manager_id: answers.manager,
+    });
+    console.log("employee added");
+    employees();
   } else {
-    connection.query(
-      "insert into employees set ?",
-      {
-        first_name: answers.firstName,
-        last_name: answers.lastName,
-        role_id: answers.role,
-      },
-      (err) => {
-        if (err) throw err;
-        console.log("employee added");
-        employees();
-      }
-    );
+    connection.awaitQuery("insert into employees set ?", {
+      first_name: answers.firstName,
+      last_name: answers.lastName,
+      role_id: answers.role,
+    });
+    console.log("employee added");
+    employees();
   }
 };
 
@@ -215,17 +203,14 @@ const editEmployeeManager = async (employees) => {
 
 const deleteEmployee = async (employees) => {
   let employeeList = await getList(
-    connection,
     "CONCAT(first_name, ' ', last_name)",
     "employees"
   );
   let managersList = await getList(
-    connection,
-    "manager_id",
+    "CONCAT(first_name, ' ', last_name)",
     "employees where manager_id is Null"
   );
-  console.log(managersList);
-  let answers = await inquirer.prompt([
+  let answer1 = await inquirer.prompt([
     {
       name: "delete",
       message: "Which Employee are you Deleting?:",
@@ -237,25 +222,32 @@ const deleteEmployee = async (employees) => {
       message: "are you sure?",
       type: "confirm",
     },
-    {
-      when: (answers) =>
-        managersList.findIndex(
-          (manager) => manager.value === answers.delete
-        ) !== -1,
-      name: "dblCheck",
-      message:
-        "deleting a manager will delete all of their subordiates\nARE YOU SURE?",
-      type: "confirm",
-    },
   ]);
-  if (answers.check) {
-    if (answers.dblCheck) {
-      connection.awaitQuery(`Delete from employees where ?`, {
-        manager_id: answers.delete,
-      });
+  if (answer1.check) {
+    let managerIndex = managersList.findIndex(
+      (manager) => manager.value === answer1.delete
+    );
+    let answer2;
+    if (managerIndex !== -1) {
+      managersList.splice(managerIndex, 1);
+      answer2 = await inquirer.prompt([
+        {
+          name: "alter",
+          message: "Which manager will you reassign their subordinates to?:",
+          type: "list",
+          choices: managersList,
+        },
+      ]);
+    }
+
+    if (answer2) {
+      connection.awaitQuery(`UPDATE employees SET ? WHERE ?`, [
+        { manager_id: answer2.alter },
+        { manager_id: answer1.delete },
+      ]);
     }
     connection.awaitQuery(`Delete from employees where ?`, {
-      id: answers.delete,
+      id: answer1.delete,
     });
     console.log("Employee deleted");
     employees();
