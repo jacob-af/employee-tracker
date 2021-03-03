@@ -73,6 +73,33 @@ const addRole = async (connection, roles) => {
   );
 };
 
+const editSalary = async (connection, roles) => {
+  let roleList = await getList(connection, "title", "role");
+  let answers = await inquirer.prompt([
+    {
+      name: "role",
+      message: "Which role are you changing the salary of?:",
+      type: "list",
+      choices: roleList,
+    },
+    {
+      type: "number",
+      name: "salary",
+      message: "what is the new salary?",
+    },
+  ]);
+  connection.query(
+    `UPDATE role SET ? WHERE ?`,
+    [{ salary: answers.salary }, { id: answers.role }],
+    (err, rows) => {
+      if (err) {
+        console.log("Role could not be updated");
+      }
+      roles();
+    }
+  );
+};
+
 const deleteRole = async (connection, roles) => {
   //drop a row
   let roleList = await getList(connection, "title", "role");
@@ -84,9 +111,7 @@ const deleteRole = async (connection, roles) => {
       choices: roleList,
     },
   ]);
-  console.log(parseInt(answer1.deleted) - 1);
   roleList.splice(parseInt(answer1.deleted) - 1, 1);
-  console.log(roleList);
   let answer2 = await inquirer.prompt([
     {
       name: "replace",
@@ -128,4 +153,4 @@ const deleteRole = async (connection, roles) => {
   }
 };
 
-module.exports = { viewRoles, addRole, deleteRole };
+module.exports = { viewRoles, addRole, deleteRole, editSalary };

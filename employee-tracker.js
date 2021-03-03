@@ -15,7 +15,12 @@ const {
   deleteEmployee,
 } = require("./assets/employees.js");
 
-const { viewRoles, addRole, deleteRole } = require("./assets/role.js");
+const {
+  viewRoles,
+  addRole,
+  deleteRole,
+  editSalary,
+} = require("./assets/roles.js");
 const {
   viewDepartments,
   addDepartment,
@@ -133,6 +138,12 @@ const roles = (choice) => {
       addRole(connection, roles);
       break;
     // case 'Edit Role':
+    case "Edit Salary":
+      editSalary(connection, roles);
+      break;
+    case "Edit Department":
+      editDepartment(connection, roles);
+      break;
     case "Delete Role":
       deleteRole(connection, roles);
       break;
