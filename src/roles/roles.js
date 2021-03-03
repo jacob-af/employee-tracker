@@ -6,13 +6,13 @@ const viewRoles = async (roleMenu, runPrompt) => {
   //return view role table
   let rows = await connection.awaitQuery(
     `SELECT 
-        role.id, 
-        role.title, 
-        role.salary, 
+        roles.id, 
+        roles.title, 
+        roles.salary, 
         departments.department_name 
-    FROM role 
-    JOIN departments ON role.department_id = departments.id
-    ORDER BY role.id ASC`
+    FROM roles 
+    JOIN departments ON roles.department_id = departments.id
+    ORDER BY roles.id ASC`
   );
   console.log("Current Roles");
   console.table(rows);
@@ -21,7 +21,7 @@ const viewRoles = async (roleMenu, runPrompt) => {
 
 const addRole = async (roleMenu, runPrompt) => {
   //code to add new role
-  const titles = await getList("title", "role");
+  const titles = await getList("title", "roles");
   const departments = await getList("department_name", "departments");
   let answers = await inquirer.prompt([
     {
@@ -52,17 +52,18 @@ const addRole = async (roleMenu, runPrompt) => {
       choices: departments,
     },
   ]);
-  connection.awaitQuery("insert into role set ?", {
+  connection.awaitQuery("insert into roles set ?", {
     title: answers.newRole,
     salary: answers.salary,
     department_id: answers.department,
   });
+  console.clear();
   console.log("New Role Added");
   roleMenu(runPrompt);
 };
 
 const editSalary = async (roleMenu, runPrompt) => {
-  let roleList = await getList("title", "role");
+  let roleList = await getList("title", "roles");
   let answers = await inquirer.prompt([
     {
       name: "role",
@@ -76,16 +77,18 @@ const editSalary = async (roleMenu, runPrompt) => {
       message: "what is the new salary?",
     },
   ]);
-  connection.awaitQuery(`UPDATE role SET ? WHERE ?`, [
+  connection.awaitQuery(`UPDATE roles SET ? WHERE ?`, [
     { salary: answers.salary },
     { id: answers.role },
   ]);
+  console.clear();
+  console.log("Salary has been updated");
   roleMenu(runPrompt);
 };
 
 const editDepartment = async (roleMenu, runPrompt) => {
   let departmentList = await getList("department_name", "departments");
-  let roleList = await getList("title", "role");
+  let roleList = await getList("title", "roles");
   let answers = await inquirer.prompt([
     {
       name: "role",
@@ -100,16 +103,18 @@ const editDepartment = async (roleMenu, runPrompt) => {
       choices: departmentList,
     },
   ]);
-  connection.awaitQuery(`UPDATE role SET ? WHERE ?`, [
+  connection.awaitQuery(`UPDATE roles SET ? WHERE ?`, [
     { department_id: answers.department },
     { id: answers.role },
   ]);
+  console.clear();
+  console.log("Department has been changed");
   roleMenu(runPrompt);
 };
 
 const deleteRole = async (roleMenu, runPrompt) => {
   //drop a row
-  let roleList = await getList("title", "role");
+  let roleList = await getList("title", "roles");
   let answer1 = await inquirer.prompt([
     {
       name: "deleted",
@@ -132,6 +137,7 @@ const deleteRole = async (roleMenu, runPrompt) => {
       type: "confirm",
     },
   ]);
+  console.clear();
   if (answer2.check) {
     connection.awaitQuery(`UPDATE employees SET ? WHERE ?`, [
       { role_id: answer2.replace },

@@ -73,7 +73,7 @@ const deleteDepartment = async (departmentMenu, runPrompt) => {
   ]);
   console.clear();
   if (answer2.check) {
-    connection.awaitQuery(`UPDATE role set ? WHERE ?`, [
+    connection.awaitQuery(`UPDATE roles set ? WHERE ?`, [
       { department_id: answer2.replace },
       { department_id: answer1.delete },
     ]);

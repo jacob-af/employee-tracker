@@ -2,7 +2,6 @@ const cTable = require("console.table");
 const figlet = require("figlet");
 
 const connection = require("./src/connection.js");
-
 const runPrompt = require("./src/runPrompt");
 
 const welcome = () => {

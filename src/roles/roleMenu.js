@@ -43,6 +43,7 @@ const roleMenu = async (runPrompt) => {
       break;
     case "Return to main menu":
     default:
+      console.clear();
       runPrompt();
       break;
   }

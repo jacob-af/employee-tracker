@@ -59,7 +59,9 @@ const viewDepartmentBudgetUsage = async () => {
 
 const farewell = () => {
   connection.end();
-  console.log("farewell");
+  console.clear();
+
+  console.log("Thank you for using Employee Tracker\nHave a wonderful day");
 };
 
 module.exports = runPrompt;

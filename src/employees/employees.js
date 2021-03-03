@@ -6,17 +6,20 @@ const mainQuery = `SELECT
     employees.id, 
     employees.first_name AS 'First Name', 
     employees.last_name AS 'Last Name', 
-    role.title as Title, 
-    role.salary AS Salary, 
+    roles.title as Title, 
+    roles.salary AS Salary, 
     departments.department_name AS Department, 
     CONCAT(manager.first_name, ' ', manager.last_name) AS Manager 
 FROM employees 
-    JOIN role ON employees.role_id = role.id 
-    JOIN departments ON role.department_id = departments.id 
+    JOIN roles ON employees.role_id = roles.id 
+    JOIN departments ON roles.department_id = departments.id 
     LEFT JOIN employees AS manager ON employees.manager_id = manager.id`;
 
 const viewEmployees = async (employees, runPrompt) => {
-  const rows = await connection.awaitQuery(mainQuery);
+  const rows = await connection.awaitQuery(
+    `${mainQuery} ORDER BY employees.id ASC`
+  );
+  console.clear();
   console.log("All Employees");
   console.table(rows);
   employees(runPrompt);
@@ -34,6 +37,7 @@ const viewEmployeesByDepartment = async (employees, runPrompt) => {
       choices: departmentList,
     },
   ]);
+  console.clear();
   if (answers.chooseDepartment === "All") {
     let rows = await connection.awaitQuery(`${mainQuery} ORDER BY Department`);
     console.log("All Employees");
@@ -93,7 +97,7 @@ const viewEmployeesByManager = async (employees, runPrompt) => {
 };
 
 const addEmployee = async (employees, runPrompt) => {
-  const roleList = await getList("title", "role");
+  const roleList = await getList("title", "roles");
   let managerList = await getList(
     "CONCAT(first_name, ' ', last_name)",
     "employees where manager_id is NULL"
@@ -150,7 +154,7 @@ const editEmployeeRole = async (employees, runPrompt) => {
     "CONCAT(first_name, ' ', last_name)",
     "employees"
   );
-  let rolesList = await getList("title", "role");
+  let rolesList = await getList("title", "roles");
   let answers = await inquirer.prompt([
     {
       name: "alter",
