@@ -1,8 +1,8 @@
 const inquirer = require("inquirer");
-const getList = require("./getList.js");
-const connection = require("./connection.js");
+const getList = require("../getList.js");
+const connection = require("../connection.js");
 
-const viewRoles = async (roles) => {
+const viewRoles = async (roleMenu, runPrompt) => {
   //return view role table
   let rows = await connection.awaitQuery(
     `SELECT 
@@ -16,10 +16,10 @@ const viewRoles = async (roles) => {
   );
   console.log("Current Roles");
   console.table(rows);
-  roles();
+  roleMenu(runPrompt);
 };
 
-const addRole = async (roles) => {
+const addRole = async (roleMenu, runPrompt) => {
   //code to add new role
   const titles = await getList("title", "role");
   const departments = await getList("department_name", "departments");
@@ -58,10 +58,10 @@ const addRole = async (roles) => {
     department_id: answers.department,
   });
   console.log("New Role Added");
-  roles();
+  roleMenu(runPrompt);
 };
 
-const editSalary = async (roles) => {
+const editSalary = async (roleMenu, runPrompt) => {
   let roleList = await getList("title", "role");
   let answers = await inquirer.prompt([
     {
@@ -80,10 +80,10 @@ const editSalary = async (roles) => {
     { salary: answers.salary },
     { id: answers.role },
   ]);
-  roles();
+  roleMenu(runPrompt);
 };
 
-const editDepartment = async (roles) => {
+const editDepartment = async (roleMenu, runPrompt) => {
   let departmentList = await getList("department_name", "departments");
   let roleList = await getList("title", "role");
   let answers = await inquirer.prompt([
@@ -104,10 +104,10 @@ const editDepartment = async (roles) => {
     { department_id: answers.department },
     { id: answers.role },
   ]);
-  roles();
+  roleMenu(runPrompt);
 };
 
-const deleteRole = async (roles) => {
+const deleteRole = async (roleMenu, runPrompt) => {
   //drop a row
   let roleList = await getList("title", "role");
   let answer1 = await inquirer.prompt([
@@ -140,11 +140,10 @@ const deleteRole = async (roles) => {
     console.log("Employees' roles update");
     connection.awaitQuery(`Delete from role where ?`, { id: answer1.deleted });
     console.log("Role deleted");
-    roles();
   } else {
     console.log("going back to menu...");
-    roles();
   }
+  roleMenu(runPrompt);
 };
 
 module.exports = { viewRoles, addRole, deleteRole, editSalary, editDepartment };

@@ -1,6 +1,6 @@
 const inquirer = require("inquirer");
-const getList = require("./getList.js");
-const connection = require("./connection.js");
+const getList = require("../getList.js");
+const connection = require("../connection.js");
 
 const mainQuery = `SELECT 
     employees.id, 
@@ -15,14 +15,14 @@ FROM employees
     JOIN departments ON role.department_id = departments.id 
     LEFT JOIN employees AS manager ON employees.manager_id = manager.id`;
 
-const viewEmployees = async (employees) => {
+const viewEmployees = async (employees, runPrompt) => {
   const rows = await connection.awaitQuery(mainQuery);
   console.log("All Employees");
   console.table(rows);
-  employees();
+  employees(runPrompt);
 };
 
-const viewEmployeesByDepartment = async (employees) => {
+const viewEmployeesByDepartment = async (employees, runPrompt) => {
   //return view department table
   let departmentList = await getList("department_name", "departments");
   departmentList = ["All", ...departmentList];
@@ -38,7 +38,7 @@ const viewEmployeesByDepartment = async (employees) => {
     let rows = await connection.awaitQuery(`${mainQuery} ORDER BY Department`);
     console.log("All Employees");
     console.table(rows);
-    employees();
+    employees(runPrompt);
   } else {
     let rows = await connection.awaitQuery(`${mainQuery} WHERE ?`, {
       "departments.id": answers.chooseDepartment,
@@ -47,17 +47,17 @@ const viewEmployeesByDepartment = async (employees) => {
       `Employees in the ${departmentList[answers.chooseDepartment]} Department`
     );
     console.table(rows);
-    employees();
+    employees(runPrompt);
   }
 };
 
-const viewEmployeesByManager = async (employees) => {
+const viewEmployeesByManager = async (employees, runPrompt) => {
   // view employee by manager
   let managerList = await getList(
     "CONCAT(first_name, ' ', last_name)",
     "employees where manager_id is NULL"
   );
-  managerList = ["{ name: 'No Manager', value: 0 }", ...managerList];
+  managerList = [{ name: "No Manager", value: 0 }, ...managerList];
 
   let answers = await inquirer.prompt([
     {
@@ -67,6 +67,7 @@ const viewEmployeesByManager = async (employees) => {
       choices: managerList,
     },
   ]);
+  console.clear();
   if (answers.chooseManager === 0) {
     let rows = await connection.awaitQuery(
       `SELECT * FROM
@@ -75,21 +76,23 @@ const viewEmployeesByManager = async (employees) => {
     );
     console.log("Employees with no manager");
     console.table(rows);
-    employees();
   } else {
     let rows = await connection.awaitQuery(
-      `SELECT * FROM
-        (${mainQuery}) AS temp
+      `${mainQuery}
         WHERE ?`,
+      { "employees.manager_id": answers.chooseManager }
+    );
+    let manager = await connection.awaitQuery(
+      `Select CONCAT(first_name, ' ', last_name) as manager from employees where ?`,
       { id: answers.chooseManager }
     );
-    console.log(`Employees managed by ${answers.chooseManager}`);
+    console.log(`Employees managed by ${manager[0].manager}`);
     console.table(rows);
-    employees();
   }
+  employees(runPrompt);
 };
 
-const addEmployee = async (employees) => {
+const addEmployee = async (employees, runPrompt) => {
   const roleList = await getList("title", "role");
   let managerList = await getList(
     "CONCAT(first_name, ' ', last_name)",
@@ -122,6 +125,7 @@ const addEmployee = async (employees) => {
       choices: managerList,
     },
   ]);
+  console.clear();
   if (answers.manager !== 0) {
     connection.awaitQuery("insert into employees set ?", {
       first_name: answers.firstName,
@@ -130,7 +134,6 @@ const addEmployee = async (employees) => {
       manager_id: answers.manager,
     });
     console.log("employee added");
-    employees();
   } else {
     connection.awaitQuery("insert into employees set ?", {
       first_name: answers.firstName,
@@ -138,11 +141,11 @@ const addEmployee = async (employees) => {
       role_id: answers.role,
     });
     console.log("employee added");
-    employees();
   }
+  employees(runPrompt);
 };
 
-const editEmployeeRole = async (employees) => {
+const editEmployeeRole = async (employees, runPrompt) => {
   let employeeList = await getList(
     "CONCAT(first_name, ' ', last_name)",
     "employees"
@@ -166,16 +169,17 @@ const editEmployeeRole = async (employees) => {
     { role_id: answers.role },
     { id: answers.alter },
   ]);
+  console.clear();
   console.log("Role updated");
-  employees();
+  employees(runPrompt);
 };
 
-const editEmployeeManager = async (employees) => {
+const editEmployeeManager = async (employees, runPrompt) => {
   let employeeList = await getList(
     "CONCAT(first_name, ' ', last_name)",
     "employees"
   );
-  let managersList = await getList(
+  let managerList = await getList(
     "CONCAT(first_name, ' ', last_name)",
     "employees where manager_id is Null"
   );
@@ -190,18 +194,19 @@ const editEmployeeManager = async (employees) => {
       name: "manager",
       message: "Who will the new manager be?:",
       type: "list",
-      choices: managersList,
+      choices: managerList,
     },
   ]);
   connection.awaitQuery(`UPDATE employees set ? WHERE ?`, [
     { manager_id: answers.manager },
     { id: answers.alter },
   ]);
-  console.log("Manager updated");
-  employees();
+  console.clear();
+  console.log(`Employee now managed by ${answers.manager}`);
+  employees(runPrompt);
 };
 
-const deleteEmployee = async (employees) => {
+const deleteEmployee = async (employees, runPrompt) => {
   let employeeList = await getList(
     "CONCAT(first_name, ' ', last_name)",
     "employees"
@@ -228,6 +233,7 @@ const deleteEmployee = async (employees) => {
       (manager) => manager.value === answer1.delete
     );
     let answer2;
+    console.clear();
     if (managerIndex !== -1) {
       managersList.splice(managerIndex, 1);
       answer2 = await inquirer.prompt([
@@ -239,7 +245,6 @@ const deleteEmployee = async (employees) => {
         },
       ]);
     }
-
     if (answer2) {
       connection.awaitQuery(`UPDATE employees SET ? WHERE ?`, [
         { manager_id: answer2.alter },
@@ -250,11 +255,10 @@ const deleteEmployee = async (employees) => {
       id: answer1.delete,
     });
     console.log("Employee deleted");
-    employees();
   } else {
     console.log("going back to main menu...");
-    employees();
   }
+  employees(runPrompt);
 };
 
 module.exports = {

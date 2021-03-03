@@ -1,15 +1,16 @@
 const inquirer = require("inquirer");
-const getList = require("./getList.js");
-const connection = require("./connection.js");
+const getList = require("../getList.js");
+const connection = require("../connection.js");
 
-const viewDepartments = async (departments) => {
+const viewDepartments = async (departmentMenu, runPrompt) => {
   let rows = await connection.awaitQuery(`SELECT * FROM departments`);
+  console.clear();
   console.log("Current Departments");
   console.table(rows);
-  departments();
+  departmentMenu(runPrompt);
 };
 
-const addDepartment = async (departments) => {
+const addDepartment = async (departmentMenu, runPrompt) => {
   //code to add new department
   const departmentsList = await getList("department_name", "departments");
   let answers = await inquirer.prompt([
@@ -37,22 +38,26 @@ const addDepartment = async (departments) => {
   connection.awaitQuery("insert into departments set ?", {
     department_name: answers.newDepartment,
   });
+  console.clear();
   console.log("New Department Added");
-  departments();
+  departmentMenu(runPrompt);
 };
 
-const deleteDepartment = async (departments) => {
+const deleteDepartment = async (departmentMenu, runPrompt) => {
   //drop a row
   let departmentList = await getList("department_name", "departments");
   let answer1 = await inquirer.prompt([
     {
-      name: "deleted",
+      name: "delete",
       message: "Which Department are you Deleting?:",
       type: "list",
       choices: departmentList,
     },
   ]);
-  departmentList.splice(parseInt(answer1.deleted) - 1, 1);
+  let departmentIndex = departmentList.findIndex(
+    (department) => department.value === answer1.delete
+  );
+  departmentList.splice(departmentIndex, 1);
   let answer2 = await inquirer.prompt([
     {
       name: "replace",
@@ -66,21 +71,21 @@ const deleteDepartment = async (departments) => {
       type: "confirm",
     },
   ]);
+  console.clear();
   if (answer2.check) {
     connection.awaitQuery(`UPDATE role set ? WHERE ?`, [
       { department_id: answer2.replace },
-      { department_id: answer1.deleted },
+      { department_id: answer1.delete },
     ]);
     console.log("Employees' department update");
     connection.awaitQuery(`Delete from departments where ?`, {
-      id: answer1.deleted,
+      id: answer1.delete,
     });
     console.log("Department deleted");
-    departments();
   } else {
     console.log("going back to main menu...");
-    departments();
   }
+  departmentMenu(runPrompt);
 };
 
 module.exports = { viewDepartments, addDepartment, deleteDepartment };
