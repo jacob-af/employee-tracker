@@ -1,26 +1,3 @@
-const questions = [
-  {
-    name: "action",
-    type: "rawlist",
-    message: "What would you like to do?",
-    choices: [
-      "View All Employees",
-      "View All Employees by department",
-      "View all employees by manager",
-      "View Roles",
-      "Add Employee",
-      "Add Role",
-      "Add Department",
-      "Remove Employee",
-      "Update Employee Role",
-      "Update Employee Manager",
-      "Remove Role",
-      "Remove Department",
-      "Exit",
-    ],
-  },
-];
-
 const newQuestions = [
   {
     name: "action",
@@ -30,6 +7,7 @@ const newQuestions = [
       "View, add, edit, or delete Employee",
       "View, add, edit, or delete Role",
       "View, add, edit, or delete Department",
+      "View payroll total for each Department",
       "Exit",
     ],
   },
@@ -72,7 +50,8 @@ const newQuestions = [
     choices: [
       "View Roles",
       "Add Role",
-      "Edit Role",
+      "Edit Salary",
+      "Edit Department",
       "Delete Role",
       "Return to main menu",
     ],

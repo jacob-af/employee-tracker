@@ -1,3 +1,4 @@
+const inquirer = require("inquirer");
 const getList = require("./getList.js");
 
 const viewRoles = (connection, roles) => {

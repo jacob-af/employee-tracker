@@ -15,6 +15,12 @@ const {
   deleteEmployee,
 } = require("./assets/employees.js");
 
+const { viewRoles, addRole, deleteRole } = require("./assets/role.js");
+const {
+  viewDepartments,
+  addDepartment,
+  deleteDepartment,
+} = require("./assets/department.js");
 const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
@@ -22,20 +28,6 @@ const connection = mysql.createConnection({
   password: "b00tcamp",
   database: "employee_db",
 });
-
-const viewDepartments = () => {
-  connection.query(
-    `SELECT 
-            *
-        FROM departments`,
-    (err, rows) => {
-      if (err) throw err;
-      console.log("Current Departments");
-      console.table(rows);
-      runPrompt();
-    }
-  );
-};
 
 const viewDepartmentBudgetUsage = () => {
   connection.query(
@@ -51,106 +43,6 @@ const viewDepartmentBudgetUsage = () => {
       runPrompt();
     }
   );
-};
-
-const addDepartment = async () => {
-  //code to add new department
-  const departments = await getList(
-    connection,
-    "department_name",
-    "departments"
-  );
-  let answers = await inquirer.prompt([
-    {
-      type: "input",
-      name: "newDepartment",
-      message: "What is the name of the new department?: ",
-      validate: function (newDepartment) {
-        if (
-          departments.findIndex(
-            (department) => department.name === newDepartment
-          ) !== -1 ||
-          newDepartment === ""
-        ) {
-          console.log("\nthat department already exists");
-          return false;
-        } else {
-          return true;
-        }
-      },
-    },
-  ]);
-  connection.query(
-    "insert into departments set ?",
-    {
-      department_name: answers.newDepartment,
-    },
-    (err) => {
-      if (err) throw err;
-      console.log("New Department Added");
-      runPrompt();
-    }
-  );
-};
-
-const deleteDepartment = async () => {
-  //drop a row
-  let departmentList = await getList(
-    connection,
-    "department_name",
-    "department"
-  );
-  console.log(managersList);
-  let answers = await inquirer.prompt([
-    {
-      name: "delete",
-      message: "Which Department are you Deleting?:",
-      type: "list",
-      choices: departmentList,
-    },
-    {
-      name: "check",
-      message: "are you sure?",
-      type: "confirm",
-    },
-    {
-      when: (answers) =>
-        managersList.findIndex(
-          (manager) => manager.value === answers.delete
-        ) !== -1,
-      name: "dblCheck",
-      message:
-        "deleting a department will delete all of their subordiates\nARE YOU SURE?",
-      type: "confirm",
-    },
-  ]);
-  if (answers.check) {
-    if (answers.dblCheck) {
-      connection.query(
-        `Delete from employees where ?`,
-        { manager_id: answers.delete },
-        (err, rows) => {
-          if (err) {
-            console.log("You may not delete this employee");
-          }
-        }
-      );
-    }
-    connection.query(
-      `Delete from employees where ?`,
-      { id: answers.delete },
-      (err, rows) => {
-        if (err) {
-          console.log("You may not delete this employee");
-        }
-        console.log("Employee deleted");
-        runPrompt();
-      }
-    );
-  } else {
-    console.log("going back to main menu...");
-    runPrompt();
-  }
 };
 
 const farewell = () => {
@@ -169,6 +61,9 @@ const runPrompt = async () => {
       break;
     case "View, add, edit, or delete Department":
       departments(answers.departments);
+      break;
+    case "View payroll total for each Department":
+      viewDepartmentBudgetUsage();
       break;
     case "Exit":
       farewell();
@@ -213,17 +108,14 @@ const employees = (choice) => {
 const departments = (choice) => {
   switch (choice) {
     case "View Departments":
-      viewDepartments();
-      break;
-    case "View Departments' Budget":
-      viewDepartmentBudgetUsage();
+      viewDepartments(connection, departments);
       break;
     case "Add Department":
-      addDepartment();
+      addDepartment(connection, departments);
       break;
-    case "Edit Department":
+    //case "Edit Department":
     case "Delete Department":
-      deleteDepartment();
+      deleteDepartment(connection, departments);
       break;
     case "Return to main menu":
     default:
@@ -241,7 +133,9 @@ const roles = (choice) => {
       addRole(connection, roles);
       break;
     // case 'Edit Role':
-    // case 'Delete Role':
+    case "Delete Role":
+      deleteRole(connection, roles);
+      break;
     case "Return to main menu":
     default:
       runPrompt();
