@@ -55,19 +55,6 @@ const addDepartment = async (connection, departments) => {
   );
 };
 
-const matchedDepartments = (answers, current) => {
-  console.log(answers, current);
-  if (current == 1) {
-    console.log(answers);
-    console.log(
-      "\nYou cannot reassign employees to a department you are deleting"
-    );
-    return false;
-  } else {
-    return true;
-  }
-};
-
 const deleteDepartment = async (connection, departments) => {
   //drop a row
   let departmentList = await getList(
