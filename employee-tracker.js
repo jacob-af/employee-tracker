@@ -1,9 +1,8 @@
-const mysql = require("mysql-await");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
-const questions = require("./assets/questions.js");
-const getList = require("./assets/getList.js");
+const connection = require("./src/connection.js");
+const questions = require("./src/questions.js");
 
 const {
   viewEmployees,
@@ -13,41 +12,33 @@ const {
   editEmployeeRole,
   editEmployeeManager,
   deleteEmployee,
-} = require("./assets/employees.js");
+} = require("./src/employees.js");
 
 const {
   viewRoles,
   addRole,
   deleteRole,
   editSalary,
-} = require("./assets/roles.js");
+  editDepartment,
+} = require("./src/roles.js");
+
 const {
   viewDepartments,
   addDepartment,
   deleteDepartment,
-} = require("./assets/department.js");
-const connection = mysql.createConnection({
-  host: "localhost",
-  port: 3306,
-  user: "root",
-  password: "b00tcamp",
-  database: "employee_db",
-});
+} = require("./src/department.js");
 
-const viewDepartmentBudgetUsage = () => {
-  connection.query(
+const viewDepartmentBudgetUsage = async () => {
+  let rows = await connection.awaitQuery(
     `SELECT 
             departments.id, departments.department_name, SUM(role.salary)
-        FROM departments
-        LEFT JOIN role ON departments.id = role.department_id
-        GROUP BY departments.id`,
-    (err, rows) => {
-      if (err) throw err;
-      console.log("Current Departments");
-      console.table(rows);
-      runPrompt();
-    }
+      FROM departments
+      LEFT JOIN role ON departments.id = role.department_id
+      GROUP BY departments.id`
   );
+  console.log("Current Departments");
+  console.table(rows);
+  runPrompt();
 };
 
 const farewell = () => {
@@ -83,25 +74,25 @@ const runPrompt = async () => {
 const employees = (choice) => {
   switch (choice) {
     case "View All Employees":
-      viewEmployees(connection, employees);
+      viewEmployees(employees);
       break;
     case "View All Employees By Department":
-      viewEmployeesByDepartment(connection, employees);
+      viewEmployeesByDepartment(employees);
       break;
     case "View All Employees By Manager":
-      viewEmployeesByManager(connection, employees);
+      viewEmployeesByManager(employees);
       break;
     case "Add Employee":
-      addEmployee(connection, employees);
+      addEmployee(employees);
       break;
     case "Edit Employee Role":
-      editEmployeeRole(connection, employees);
+      editEmployeeRole(employees);
       break;
     case "Edit Employee Manager":
-      editEmployeeManager(connection, employees);
+      editEmployeeManager(employees);
       break;
     case "Delete Employee":
-      deleteEmployee(connection, employees);
+      deleteEmployee(employees);
       break;
     case "Return to main menu":
     default:
@@ -113,14 +104,14 @@ const employees = (choice) => {
 const departments = (choice) => {
   switch (choice) {
     case "View Departments":
-      viewDepartments(connection, departments);
+      viewDepartments(departments);
       break;
     case "Add Department":
-      addDepartment(connection, departments);
+      addDepartment(departments);
       break;
     //case "Edit Department":
     case "Delete Department":
-      deleteDepartment(connection, departments);
+      deleteDepartment(departments);
       break;
     case "Return to main menu":
     default:
@@ -132,20 +123,20 @@ const departments = (choice) => {
 const roles = (choice) => {
   switch (choice) {
     case "View Roles":
-      viewRoles(connection, roles);
+      viewRoles(roles);
       break;
     case "Add Role":
-      addRole(connection, roles);
+      addRole(roles);
       break;
     // case 'Edit Role':
     case "Edit Salary":
-      editSalary(connection, roles);
+      editSalary(roles);
       break;
     case "Edit Department":
-      editDepartment(connection, roles);
+      editDepartment(roles);
       break;
     case "Delete Role":
-      deleteRole(connection, roles);
+      deleteRole(roles);
       break;
     case "Return to main menu":
     default:

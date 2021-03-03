@@ -1,4 +1,4 @@
-const newQuestions = [
+const questions = [
   {
     name: "action",
     type: "rawlist",
@@ -56,4 +56,4 @@ const newQuestions = [
   },
 ];
 
-module.exports = newQuestions;
+module.exports = questions;
