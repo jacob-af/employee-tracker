@@ -55,65 +55,70 @@ const addDepartment = async (connection, departments) => {
   );
 };
 
+const matchedDepartments = (answers, current) => {
+  console.log(answers, current);
+  if (current == 1) {
+    console.log(answers);
+    console.log(
+      "\nYou cannot reassign employees to a department you are deleting"
+    );
+    return false;
+  } else {
+    return true;
+  }
+};
+
 const deleteDepartment = async (connection, departments) => {
   //drop a row
   let departmentList = await getList(
     connection,
     "department_name",
-    "department"
+    "departments"
   );
-  console.log(managersList);
-  let answers = await inquirer.prompt([
+  let answer1 = await inquirer.prompt([
     {
-      name: "delete",
+      name: "deleted",
       message: "Which Department are you Deleting?:",
       type: "list",
       choices: departmentList,
     },
+  ]);
+  console.log(parseInt(answer1.deleted) - 1);
+  departmentList.splice(parseInt(answer1.deleted) - 1, 1);
+  console.log(departmentList);
+  let answers = await inquirer.prompt([
     {
       name: "replace",
       message: "Which Department should employees be reassigned to?",
       type: "list",
-      choices: departmentList.splice(delete -1, 1),
+      choices: departmentList,
     },
-
     {
       name: "check",
       message: "are you sure?",
       type: "confirm",
     },
-    {
-      when: (answers) =>
-        managersList.findIndex(
-          (manager) => manager.value === answers.delete
-        ) !== -1,
-      name: "dblCheck",
-      message:
-        "deleting a department will delete all of their subordiates\nARE YOU SURE?",
-      type: "confirm",
-    },
   ]);
   if (answers.check) {
-    if (answers.dblCheck) {
-      connection.query(
-        `Delete from employees where ?`,
-        { manager_id: answers.delete },
-        (err, rows) => {
-          if (err) {
-            console.log("You may not delete this employee");
-          }
-        }
-      );
-    }
     connection.query(
-      `Delete from employees where ?`,
-      { id: answers.delete },
+      `UPDATE role set ? WHERE ?`,
+      [{ department_id: answers.replace }, { department_id: answer1.deleted }],
       (err, rows) => {
         if (err) {
-          console.log("You may not delete this employee");
+          console.log("Department could not be updated");
         }
-        console.log("Employee deleted");
-        departments();
+        console.log("Employees' department update");
+        connection.query(
+          `Delete from departments where ?`,
+          { id: answer1.deleted },
+          (err, rows) => {
+            if (err) {
+              console.log("This department could not be deleted");
+            }
+            console.log("Department deleted");
+            departments();
+          }
+        );
       }
     );
   } else {
