@@ -74,7 +74,58 @@ const addRole = async (connection, roles) => {
 };
 
 const deleteRole = async (connection, roles) => {
-  const titles = await getList(connection, "title", "role");
+  //drop a row
+  let roleList = await getList(connection, "title", "role");
+  let answer1 = await inquirer.prompt([
+    {
+      name: "deleted",
+      message: "Which role are you deleting?:",
+      type: "list",
+      choices: roleList,
+    },
+  ]);
+  console.log(parseInt(answer1.deleted) - 1);
+  roleList.splice(parseInt(answer1.deleted) - 1, 1);
+  console.log(roleList);
+  let answer2 = await inquirer.prompt([
+    {
+      name: "replace",
+      message: "Which role should employees be reassigned to?",
+      type: "list",
+      choices: roleList,
+    },
+    {
+      name: "check",
+      message: "are you sure?",
+      type: "confirm",
+    },
+  ]);
+  if (answer2.check) {
+    connection.query(
+      `UPDATE employees set ? WHERE ?`,
+      [{ role_id: answer2.replace }, { role_id: answer1.deleted }],
+      (err, rows) => {
+        if (err) {
+          console.log("Role could not be updated");
+        }
+        console.log("Employees' roles update");
+        connection.query(
+          `Delete from role where ?`,
+          { id: answer1.deleted },
+          (err, rows) => {
+            if (err) {
+              console.log("This role could not be deleted");
+            }
+            console.log("Role deleted");
+            roles();
+          }
+        );
+      }
+    );
+  } else {
+    console.log("going back to main menu...");
+    roles();
+  }
 };
 
 module.exports = { viewRoles, addRole, deleteRole };

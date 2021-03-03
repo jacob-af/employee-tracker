@@ -35,9 +35,7 @@ const newQuestions = [
     message: "What would you like to do?",
     choices: [
       "View Departments",
-      "View Departments' Budget",
       "Add Department",
-      "Edit Department",
       "Delete Department",
       "Return to main menu",
     ],
