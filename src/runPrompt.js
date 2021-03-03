@@ -43,17 +43,22 @@ const runPrompt = async () => {
 };
 
 const viewDepartmentBudgetUsage = async () => {
-  let rows = await connection.awaitQuery(
-    `SELECT 
-              departments.id, 
-              departments.department_name as 'Department Name', 
-              SUM(role.salary) AS Budget
-        FROM departments
-        LEFT JOIN role ON departments.id = role.department_id
-        GROUP BY departments.id`
-  );
-  console.log("Current Departments");
-  console.table(rows);
+  console.clear();
+  try {
+    let rows = await connection.awaitQuery(
+      `SELECT 
+        departments.id, 
+        departments.department_name as 'Department Name', 
+        SUM(roles.salary) AS Budget
+    FROM departments
+    LEFT JOIN roles ON departments.id = roles.department_id
+    GROUP BY departments.id`
+    );
+    console.log("Current Departments");
+    console.table(rows);
+  } catch (error) {
+    console.error(`***** ${error.sqlMessage} *****`);
+  }
   runPrompt();
 };
 
