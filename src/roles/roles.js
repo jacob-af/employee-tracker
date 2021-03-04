@@ -161,7 +161,7 @@ const deleteRole = async (roleMenu, runPrompt) => {
         { role_id: answer1.deleted },
       ]);
       console.log("Employees' roles update");
-      connection.awaitQuery(`Delete from role where ?`, {
+      connection.awaitQuery(`Delete from roles where ?`, {
         id: answer1.deleted,
       });
       console.log("Role deleted");

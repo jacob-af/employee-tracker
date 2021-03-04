@@ -17,7 +17,7 @@ const viewDepartments = async (departmentMenu, runPrompt) => {
 const addDepartment = async (departmentMenu, runPrompt) => {
   //code to add new department
   try {
-    const departmentsList = await getList("department_name", "departments");
+    const departmentsList = await getList(`department_name`, `departments`);
     let answers = await inquirer.prompt([
       {
         type: "input",

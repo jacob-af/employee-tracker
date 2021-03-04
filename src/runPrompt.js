@@ -50,8 +50,9 @@ const viewDepartmentBudgetUsage = async () => {
         departments.id, 
         departments.department_name as 'Department Name', 
         SUM(roles.salary) AS Budget
-    FROM departments
-    LEFT JOIN roles ON departments.id = roles.department_id
+    FROM employees
+    JOIN roles ON employees.role_id = roles.id
+    JOIN departments ON roles.department_id = departments.id
     GROUP BY departments.id`
     );
     console.log("Current Departments");
